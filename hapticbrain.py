@@ -79,14 +79,15 @@ def show_position(screen,position):
 
 
 minmax = [ [-.01,.1],
-           [-.07,.07],
+           [-.1,.1],
            [-.01,.1] ]
-           
+remap = [1,0,2] # how to remap the coordinates
+
     
 def robot_to_position(pos,dat):
     """ Given (x,y,z) robot coordinates,
     transform them into image coordinates """
-    coord = []
+    coord = [0,0,0]
     for j in range(3):
         mn,mx = minmax[j]
         i = pos[j]
@@ -95,8 +96,9 @@ def robot_to_position(pos,dat):
         if rel<0: rel=0.
         if rel>1: rel=1.
 
-        p = int(dat.shape[j]*rel)
-        coord.append(p)
+        n = remap[j]
+        coord[n] = int(dat.shape[n]*rel)
+        #coord[remap[j]]=p
     return tuple(coord)
     
 
