@@ -1,6 +1,8 @@
 import nibabel as nib
 import pygame
 import numpy as np
+import omega_cpp_py.robot as robot
+import time
 
 img = nib.analyze.load('s150423123325DST131221107521416505-0002-00001-000001-00.hdr')
 
@@ -76,15 +78,43 @@ def show_position(screen,position):
 
 
 
+minmax = [ [-.01,.1],
+           [-.07,.07],
+           [-.01,.1] ]
+           
+    
+def robot_to_position(pos,dat):
+    """ Given (x,y,z) robot coordinates,
+    transform them into image coordinates """
+    coord = []
+    for j in range(3):
+        mn,mx = minmax[j]
+        i = pos[j]
+
+        rel = (i-mn)/(mx-mn)
+        if rel<0: rel=0.
+        if rel>1: rel=1.
+
+        p = int(dat.shape[j]*rel)
+        coord.append(p)
+    return tuple(coord)
+    
+
+
 
 prepare_surfaces(dat)
     
 screen = pygame.display.set_mode((3*imgwidth,480))
-#img = pygame.image.load('pacman.jpg').convert()
-screen.fill((0,0,0))
-#screen.blit( img, (x,y) )
     
 show_position(screen,(100,100,100))
+
+
+
+
+robot.launch('omega_cpp_py')
+robot.init()
+
+
 
 done = False
 while not done:
@@ -92,5 +122,17 @@ while not done:
     for event in events:
         if event.type==pygame.KEYDOWN and event.key==pygame.K_ESCAPE:
             done = True
-    
+
+    x = robot.rshm('x')
+    y = robot.rshm('y')
+    z = robot.rshm('z')
+    print("x=%.3f y=%.3f z=%.3f"%(x,y,z))
+    pos = robot_to_position((x,y,z),dat)
+    show_position(screen,pos)
+    time.sleep(.05)
+
+
+            
 pygame.quit()
+
+robot.unload()
