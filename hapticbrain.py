@@ -14,7 +14,14 @@ maxval = float(np.amax(dat))
 
 
 # Controls the viscosity of the robot force field
-VISCOSITY_MULTIPLIER = 120
+VISCOSITY_MULTIPLIER = 100
+
+
+def sigm(x):
+    """ A sigmoid function used for transforming the viscosity values (so that
+    we are more sensitive in the middle """
+    return 1 - (1/(1+np.exp(-20*(x-.5))))
+
 
 
 # Controls the size of the display panel
@@ -187,7 +194,7 @@ while not done:
     curval = dat[i,j,k]
 
     relval = (curval-minval)/(maxval-minval)
-    visc = relval*VISCOSITY_MULTIPLIER
+    visc = sigm(relval)*VISCOSITY_MULTIPLIER
     robot.wshm('viscosity',visc)
     
     show_position(screen,(i,j,k),"value = %f"%curval)
