@@ -2,7 +2,7 @@
 
 ## To prepare
 
-Checkout the omega python robot code in the root of this repo (it will be ignored by git by default). The folder must be named `omega_cpp_py`.
+Checkout the omega python robot code (also hosted on [github](https://github.com/florisvanvugt/omega_cpp_py)) in the root of this repo (it will be ignored by git by default). The folder must be named `omega_cpp_py`.
 For example, in the root of the repository you can type
 
 ```
@@ -24,5 +24,5 @@ python haptic_brain.py
 
 ## TODO
 
-- [ ] Viscosity dependence on tissue type
-- [ ] Allow larger window display
+- [x] Viscosity dependence on tissue type
+- [x] Allow larger window display
