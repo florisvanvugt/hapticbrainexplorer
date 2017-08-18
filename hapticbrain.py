@@ -8,11 +8,20 @@ import time
 img = nib.load('icbm_avg_152_t1_tal_nlin_symmetric_VI.nii')
 
 dat = img.get_data()
-x,y,z = dat.shape[0]/2,dat.shape[1]/2,dat.shape[2]/2
+minval = float(np.amin(dat))
+maxval = float(np.amax(dat))
+# x,y,z = dat.shape[0]/2,dat.shape[1]/2,dat.shape[2]/2
 
 
+# Controls the viscosity of the robot force field
+VISCOSITY_MULTIPLIER = 120
 
-imgwidth = 300
+
+# Controls the size of the display panel
+PANEL_WIDTH = 500
+
+IMAGE_SCALE = 2.
+
 
 
 pygame.init()
@@ -41,8 +50,6 @@ def prepare_surfaces(dat):
     surfaces = {"x":[],
                 "y":[],
                 "z":[]}
-    minval = float(np.amin(dat))
-    maxval = float(np.amax(dat))
 
     for j,dim in enumerate(dims):
         dimlen = dat.shape[j]
@@ -56,7 +63,9 @@ def prepare_surfaces(dat):
             ###graymat = mat
             surf = pygame.surfarray.make_surface(graymat)
             surf = pygame.transform.flip(surf,False,True)
-            
+            surf = pygame.transform.smoothscale(surf,(int(surf.get_width()*IMAGE_SCALE),
+                                                      int(surf.get_height()*IMAGE_SCALE)))
+                                          
             surfaces[dim].append(surf)
 
     print("...done")
@@ -66,15 +75,19 @@ def prepare_surfaces(dat):
 
 Y_OFFSET = 35
 
-def show_position(screen,position):
-    """ Show position (x,y,z) """
+def show_position(screen,position,label=""):
+    """ Show position (x,y,z).
+    Arguments
+    screen : the pygame surface on which to draw
+    label : the label corersponding
+    """
     screen.fill((0,0,0))
 
     # Draw the panels corresponding to the slices
     for j,dim in enumerate(dims):
         i = position[j]
         surf = surfaces[dim][i]
-        screen.blit(surf,(j*imgwidth,Y_OFFSET))
+        screen.blit(surf,(j*PANEL_WIDTH,Y_OFFSET))
 
 
     for j,dim in enumerate(dims):
@@ -85,19 +98,20 @@ def show_position(screen,position):
         surf = surfaces[dim][i]
         otherdims = [ w for w in range(3) if w!=j ]
 
-        xpos = j*imgwidth                 + position[otherdims[0]]
-        ypos = Y_OFFSET+surf.get_height() - position[otherdims[1]]
+        xpos = j*PANEL_WIDTH                 + int(IMAGE_SCALE*position[otherdims[0]])
+        ypos = Y_OFFSET+surf.get_height()    - int(IMAGE_SCALE*position[otherdims[1]])
         
         pygame.draw.line(screen,(0,255,0),
                          (xpos,Y_OFFSET),
                          (xpos,Y_OFFSET+surf.get_height()),1)
         pygame.draw.line(screen,(0,255,0),
-                         (j*imgwidth,ypos),
-                         ((j+1)*imgwidth,ypos),1)
+                         (j*PANEL_WIDTH,ypos),
+                         ((j+1)*PANEL_WIDTH,ypos),1)
 
         
 
-    poslabel = "x=%i y=%i z=%i   // press ESC to exit"%position
+    (i,j,k)=position
+    poslabel = "x=%i y=%i z=%i  %s  // press ESC to exit"%(i,j,k,label)
     fnt = pygame.font.SysFont("Courier",20)
     textsurf = fnt.render(poslabel,True,(255,255,255),(0,0,0)).convert(16)
     screen.blit(textsurf,(0,0))
@@ -137,7 +151,6 @@ def robot_to_position(pos,dat):
 
         coord.append(rel)
 
-
     # Remap the coordinates
     relpos = np.matmul(remap,coord)
 
@@ -148,7 +161,7 @@ def robot_to_position(pos,dat):
 
 prepare_surfaces(dat)
     
-screen = pygame.display.set_mode((3*imgwidth,480))
+screen = pygame.display.set_mode((3*PANEL_WIDTH,480)) #,pygame.FULLSCREEN )
     
 #show_position(screen,(100,100,100))
 
@@ -158,7 +171,7 @@ screen = pygame.display.set_mode((3*imgwidth,480))
 robot.launch()
 robot.init()
 
-
+robot.viscous_force(0) # start with viscous force field of zero viscosity (a fancy way of doing a null field)
 
 done = False
 while not done:
@@ -170,9 +183,15 @@ while not done:
     x = robot.rshm('x')
     y = robot.rshm('y')
     z = robot.rshm('z')
-    print("x=%.3f y=%.3f z=%.3f"%(x,y,z))
-    pos = robot_to_position((x,y,z),dat)
-    show_position(screen,pos)
+    (i,j,k) = robot_to_position((x,y,z),dat)
+    curval = dat[i,j,k]
+
+    relval = (curval-minval)/(maxval-minval)
+    visc = relval*VISCOSITY_MULTIPLIER
+    robot.wshm('viscosity',visc)
+    
+    show_position(screen,(i,j,k),"value = %f"%curval)
+    print("x=%.3f y=%.3f z=%.3f visc=%.3f"%(x,y,z,visc))
     time.sleep(.05)
 
 
