@@ -21,3 +21,8 @@ python haptic_brain.py
 
 
 
+
+## TODO
+
+- [ ] Viscosity dependence on tissue type
+- [ ] Allow larger window display
