@@ -64,17 +64,40 @@ def prepare_surfaces(dat):
     
 
 
-Y_OFFSET = 20
+Y_OFFSET = 35
 
 def show_position(screen,position):
     """ Show position (x,y,z) """
     screen.fill((0,0,0))
+
+    # Draw the panels corresponding to the slices
     for j,dim in enumerate(dims):
         i = position[j]
         surf = surfaces[dim][i]
         screen.blit(surf,(j*imgwidth,Y_OFFSET))
 
-    poslabel = "x=%i y=%i z=%i"%position
+
+    for j,dim in enumerate(dims):
+        # Draw the crosshairs on each panel
+        # these crosshairs should correspond to the
+        # "other" coordinates
+        i = position[j]
+        surf = surfaces[dim][i]
+        otherdims = [ w for w in range(3) if w!=j ]
+
+        xpos = j*imgwidth + position[otherdims[0]]
+        ypos = Y_OFFSET + position[otherdims[1]]
+        
+        pygame.draw.line(screen,(0,255,0),
+                         (xpos,Y_OFFSET),
+                         (xpos,Y_OFFSET+surf.get_height()),1)
+        pygame.draw.line(screen,(0,255,0),
+                         (j*imgwidth,ypos),
+                         ((j+1)*imgwidth,ypos),1)
+
+        
+
+    poslabel = "x=%i y=%i z=%i   // press ESC to exit"%position
     fnt = pygame.font.SysFont("Courier",20)
     textsurf = fnt.render(poslabel,True,(255,255,255),(0,0,0)).convert(16)
     screen.blit(textsurf,(0,0))
@@ -84,16 +107,26 @@ def show_position(screen,position):
 
 
 
-minmax = [ [-.01,.1],
-           [-.1,.1],
-           [-.01,.1] ]
-remap = [1,0,2] # how to remap the coordinates
+# The minimum and maximum expected values of the
+# coordinates (x,y,z).
+# This assumes that the robot is properly calibrated, i.e.
+# brought to the extreme most point when perssing RESET.
+minmax = [ [-.05,.05],
+           [-.06,.05],
+           [ .05,-.06] ] # note the flipping of the sign of z
+#remap = [1,0,2] # how to remap the coordinates
+remap = [[ 0,1,0 ], # transformation matrix for coordinates
+         [ 1,0,0 ],
+         [ 0,0,1 ]]
+
+
+
 
     
 def robot_to_position(pos,dat):
     """ Given (x,y,z) robot coordinates,
     transform them into image coordinates """
-    coord = [0,0,0]
+    coord = []
     for j in range(3):
         mn,mx = minmax[j]
         i = pos[j]
@@ -102,10 +135,13 @@ def robot_to_position(pos,dat):
         if rel<0: rel=0.
         if rel>1: rel=1.
 
-        n = remap[j]
-        coord[n] = int((dat.shape[n]-1)*rel)
-        #coord[remap[j]]=p
-    return tuple(coord)
+        coord.append(rel)
+
+
+    # Remap the coordinates
+    relpos = np.matmul(remap,coord)
+
+    return tuple([ int(r*(n-1)) for (r,n) in zip(relpos,dat.shape) ])
     
 
 
@@ -114,12 +150,12 @@ prepare_surfaces(dat)
     
 screen = pygame.display.set_mode((3*imgwidth,480))
     
-show_position(screen,(100,100,100))
+#show_position(screen,(100,100,100))
 
 
 
 
-robot.launch('omega_cpp_py')
+robot.launch()
 robot.init()
 
 
