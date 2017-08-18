@@ -4,11 +4,11 @@ import numpy as np
 import omega_cpp_py.robot as robot
 import time
 
-img = nib.analyze.load('s150423123325DST131221107521416505-0002-00001-000001-00.hdr')
+#img = nib.analyze.load('s150423123325DST131221107521416505-0002-00001-000001-00.hdr')
+img = nib.load('icbm_avg_152_t1_tal_nlin_symmetric_VI.nii')
 
 dat = img.get_data()
 x,y,z = dat.shape[0]/2,dat.shape[1]/2,dat.shape[2]/2
-maxd = np.amax(dat)
 
 
 
@@ -21,9 +21,14 @@ pygame.init()
 dims = ["x","y","z"]
 surfaces = {}
 
-def gray(im,maxval):
-    """ Source: https://stackoverflow.com/questions/41168396/how-to-create-a-pygame-surface-from-a-numpy-array-of-float32  """
-    im = 255 * (im / maxval) # float(im.max()))
+def gray(im,minval,maxval):
+    """ 
+    Turn a matrix of numbers x into a matrix of tuples (x,x,x)
+    so that it can be interpreted as a grayscale colour matrix.
+    
+    Source: https://stackoverflow.com/questions/41168396/how-to-create-a-pygame-surface-from-a-numpy-array-of-float32  
+    """
+    im = 255 * (im-minval) / (maxval-minval) # float(im.max()))
     w, h = im.shape
     ret = np.empty((w, h, 3), dtype=np.uint8)
     ret[:, :, 2] = ret[:, :, 1] = ret[:, :, 0] = im
@@ -36,6 +41,7 @@ def prepare_surfaces(dat):
     surfaces = {"x":[],
                 "y":[],
                 "z":[]}
+    minval = float(np.amin(dat))
     maxval = float(np.amax(dat))
 
     for j,dim in enumerate(dims):
@@ -46,7 +52,7 @@ def prepare_surfaces(dat):
             if dim=="y": mat = dat[:,i,:]
             if dim=="z": mat = dat[:,:,i]
 
-            graymat = gray(mat,maxval)
+            graymat = gray(mat,minval,maxval)
             ###graymat = mat
             surf = pygame.surfarray.make_surface(graymat)
             surf = pygame.transform.flip(surf,False,True)
@@ -97,7 +103,7 @@ def robot_to_position(pos,dat):
         if rel>1: rel=1.
 
         n = remap[j]
-        coord[n] = int(dat.shape[n]*rel)
+        coord[n] = int((dat.shape[n]-1)*rel)
         #coord[remap[j]]=p
     return tuple(coord)
     
