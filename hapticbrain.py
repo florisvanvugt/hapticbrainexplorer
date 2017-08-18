@@ -85,8 +85,8 @@ def show_position(screen,position):
         surf = surfaces[dim][i]
         otherdims = [ w for w in range(3) if w!=j ]
 
-        xpos = j*imgwidth + position[otherdims[0]]
-        ypos = Y_OFFSET + position[otherdims[1]]
+        xpos = j*imgwidth                 + position[otherdims[0]]
+        ypos = Y_OFFSET+surf.get_height() - position[otherdims[1]]
         
         pygame.draw.line(screen,(0,255,0),
                          (xpos,Y_OFFSET),
@@ -111,9 +111,9 @@ def show_position(screen,position):
 # coordinates (x,y,z).
 # This assumes that the robot is properly calibrated, i.e.
 # brought to the extreme most point when perssing RESET.
-minmax = [ [-.05,.05],
+minmax = [ [ .05,-.05], # note the sign flipping
            [-.06,.05],
-           [ .05,-.06] ] # note the flipping of the sign of z
+           [-.05,.06] ]
 #remap = [1,0,2] # how to remap the coordinates
 remap = [[ 0,1,0 ], # transformation matrix for coordinates
          [ 1,0,0 ],
