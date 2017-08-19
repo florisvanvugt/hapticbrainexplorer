@@ -17,6 +17,10 @@ maxval = float(np.amax(dat))
 VISCOSITY_MULTIPLIER = 100
 
 
+# Duration (in sec) between screen refreshes
+REFRESH_DURATION = .05
+
+
 def sigm(x):
     """ A sigmoid function used for transforming the viscosity values (so that
     we are more sensitive in the middle """
@@ -180,6 +184,7 @@ robot.init()
 
 robot.viscous_force(0) # start with viscous force field of zero viscosity (a fancy way of doing a null field)
 
+t0=0
 done = False
 while not done:
     events = pygame.event.get()
@@ -196,12 +201,13 @@ while not done:
     relval = (curval-minval)/(maxval-minval)
     visc = sigm(relval)*VISCOSITY_MULTIPLIER
     robot.wshm('viscosity',visc)
-    
-    show_position(screen,(i,j,k),"value = %f"%curval)
-    print("x=%.3f y=%.3f z=%.3f visc=%.3f"%(x,y,z,visc))
-    time.sleep(.05)
 
+    if time.time()-t0>REFRESH_DURATION:
+        show_position(screen,(i,j,k),"value = %f"%curval)
+        print("x=%.3f y=%.3f z=%.3f visc=%.3f"%(x,y,z,visc))
+        t0 = time.time()
 
+    time.sleep(.01)
             
 pygame.quit()
 
